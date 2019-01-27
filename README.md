@@ -5,7 +5,7 @@
 #### The task is to launch the catalogUdacity project to the internet using Amazon Web Service with lightsail. A linux instance will be created and configured using the steps listed below.
 
 ## Logging into AWS and using Lightsail
-1. #### Log in
+1. #### Log into your Amazon account.
 2. #### Create an instance
 	A Lightsail instance is a Linux server running on a virtual machine inside an Amazon datacenter.
 3. #### Choose an instance image: Ubuntu
@@ -20,7 +20,7 @@
 7. #### It's running
 	Once your instance has started up, you can log into it with SSH from your browser.
 
-	The public IP address of the instance is displayed along with its name. In the above picture it's 54.84.49.254.
+	The public IP address of the instance is displayed along with its name. For intstance 54.84.49.254.
 
 	Note: When you set up OAuth for your application, you will need a DNS name that refers to your instance's IP address. You can use the xip.io service to get one; this is a public service offered for free by Basecamp. For instance, the DNS name 54.84.49.254.xip.io refers to the server above.
 	
@@ -31,6 +31,7 @@
 ## Configuring the AWS lightsail
 
 1. ##### Updating And Managing software
+
 ```
 sudo apt-get update
 ```
@@ -43,10 +44,68 @@ sudo apt-get upgrade
 sudo apt-get autremove
 ```
 
-2. #####
+2. ##### Configuring Uncomplicated Firewall (UFW)
+
+```
+sudo status
+```
+
+## Deny all incoming threw firewall
+```
+sudo ufw default deny incoming
+```
+
+## Allow all outgoing threw firewall
+```
+sudo ufw default allow outgoing
+```
+
+## Allow ssh
+```
+sudo ufw allow ssh
+```
+
+## Allow ssh on port 2200 with tcp
+```
+sudo ufw allow 2200/tcp
+```
+
+## Allow for basic http server
+```
+sudo ufw allow www
+```
+
+## Allow NTP
+```
+sudo ufw allow ntp
+```
+
+## Allow ntp on port 123
+```
+sudo ufw allow 123/udp
+```
+
+## Enable Firewall
+```
+sudo ufw enable
+```
+
+## See the status of the firewall
+```
+sudo ufw status
+```
 
 ## Secure your server
 ##### Disable root and create user that has ability to use sudo. Eliminates a attack vector threw remote login. Some services already create an user with these capabilities. If so you can skip this step.
+
+1. #### Create user Grader for review sudo permission.
+	#### Create new user grader
+	```
+	sudo adduser grader
+	```
+	#### Pass: grader
+
+
 
 ## Contribuition
 
