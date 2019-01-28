@@ -104,8 +104,84 @@ sudo ufw status
 	sudo adduser grader
 	```
 	#### Pass: grader
+2. #### Changing to grader terminal.
+	```
+	sudo su grader
+	```
+	```
+	cd
+	mkdir .ssh
+	chmod 700 .ssh
+	```
+	```
+	cd
+	touch .ssh/authorized_keys
+	chmod 600 .ssh/authorized_keys
+	```
+3. #### Switching back to Ubuntu terminal(can close and reopen window terminal(since grader hasnt the apropriate permissions yet))
+	```
+	sudo cat /etc/sudoers
+	```
+	```
+	sudo touch /etc/sudoers.d/grader
+	```
+	```
+	sudo nano /etc/sudoers.d/grader
+	```
+	WRITE:
+	grader ALL=(ALL) NOPASSWD:ALL
+	COMMAND:
+	ctrl^x
+	Y
+	ENTER
+4. #### Creating key pair
+
+	#### If you switch back to grader terminal it will have pseudo access!
+	As ubuntu user:
+	```
+	ssh-keygen
+	```
+	Location for file should be:
+	/home/ubuntu/.ssh/PLACE_HOLDER
+	Pass:catalog
+
+	```
+	cd
+	sudo cat .ssh/PLACE_HOLDER.pub
+	```
+	As grader user:
+	```
+	cd 
+	cd .ssh
+	sudo nano authorized_keys
+	```
+	#### COPY the ssh-rsa key to authorized keys on ONE LINE.
+	#### Follow the instructions to help copy and paste between terminals.
+	##### To paste text into the browser-based SSH client
+
+	1. Highlight text in your local desktop, then press Ctrl+C or Cmd+C to copy it to your local clipboard.
+
+	2. In the bottom right corner of the browser-based SSH client, choose the clipboard icon. The browser-based SSH client clipboard text box appears.
+
+	3. Click into the text box, then press Ctrl+V or Cmd+V to paste the contents from your local clipboard into the browser-based SSH client clipboard.
+
+	4. Right-click any area on the SSH terminal screen to paste the text from the browser-based SSH client clipboard to the terminal screen.
+
+	##### To copy text from the browser-based SSH client
+
+	1. Highlight text on the terminal screen.
+
+	2. In the bottom right corner of the browser-based SSH client, choose the clipboard icon. The browser-based SSH client clipboard text box appears.
+
+	3. Highlight the text that you want to copy, then press Ctrl+C or Cmd+C to copy the text to your local clipboard. You can now paste the copied text anywhere in your local desktop.
+	#### If reference needed see first link in WebBio
 
 
+5. #### Disable base logins
+6. #### Restart ssh services.
+```
+sudo service ssh restart
+```
 
 ## Contribuition
 
@@ -118,4 +194,7 @@ sudo ufw status
 ## WebBio
 
 - ##### Full Stack Web Developer Nanodegree Udacity Lesson 5 From Linux Server Configuration -  "Get Started on LightSail"
+- ##### https://lightsail.aws.amazon.com/ls/docs/en/articles/lightsail-how-to-connect-to-your-instance-virtual-private-server
+- ##### https://aws.amazon.com/pt/premiumsupport/knowledge-center/new-user-accounts-linux-instance/
+- ##### https://docs.aws.amazon.com/pt_br/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html
 
