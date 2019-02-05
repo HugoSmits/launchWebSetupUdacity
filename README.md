@@ -47,7 +47,7 @@ sudo apt-get autremove
 2. ##### Configuring Uncomplicated Firewall (UFW)
 
 ```
-sudo status
+sudo ufw status
 ```
 
 ## Deny all incoming threw firewall
@@ -137,13 +137,14 @@ sudo ufw status
 4. #### Creating key pair
 
 	#### If you switch back to grader terminal it will have pseudo access!
-	As ubuntu user:
+	
+	As local user:
 	```
 	ssh-keygen
 	```
 	Location for file should be:
-	/home/ubuntu/.ssh/PLACE_HOLDER
-	Pass:catalog
+	/home/YOUR_NAME/.ssh/PLACE_HOLDER
+	Pass:catalog (for example (later it will be turned off))
 
 	```
 	cd
@@ -176,12 +177,424 @@ sudo ufw status
 	3. Highlight the text that you want to copy, then press Ctrl+C or Cmd+C to copy the text to your local clipboard. You can now paste the copied text anywhere in your local desktop.
 	#### If reference needed see first link in WebBio
 
+5. #### Change the port to 2200
 
-5. #### Disable base logins
+	```
+	sudo nano /etc/ssh/sshd_config
+	```
+	Locate "Port 22" in that file. Change it to "Port 2200" (At the moment i append it).
+	```
+	Restart ssh service.
+	```
+	For effect to take place the ssh service needs to restart
+	```
+	sudo service ssh restart
+	```
+	#### In the Networking tab of your instance you must add this custom port for it to be allowed on lightsail.
+	See more info at [here](https://lightsail.aws.amazon.com/ls/webapp/eu-west-3/instances/catalog-Udacity/networking)
+5. #### Disable base logins and forcing key-based logins
+	```
+	sudo nano /etc/ssh/sshd_config
+	```
+	Look for PasswordAuthentication if set to yes change it to no and save.
 6. #### Restart ssh services.
 ```
 sudo service ssh restart
 ```
+7. #### to login from local machine use:
+```
+ssh grader@YOUR_PUBLIC_IP -p 22 -i ~/.ssh/PLACE_HOLDER
+```
+8. #### Switch to UTC
+To switch to UTC, simply execute:
+```
+sudo dpkg-reconfigure tzdata
+```
+Scroll to the bottom of the Continents list and select Etc or None of the above; in the second list, select UTC. If you prefer GMT instead of UTC, it's just above UTC in that list. :)
+9. #### Python using Apache and mod_wsgi install:
+
+##### Python 2.x.x
+```
+sudo apt-get install python
+sudo apt-get install python-setuptools
+sudo apt-get install apache2 libapache2-mod-wsgi
+```
+
+##### Python 3.x.x
+```
+sudo apt-get install python3
+sudo apt-get install python3-setuptools
+sudo apt-get install apache2 libapache2-mod-wsgi-py3
+```
+
+#### Then start apache
+```
+sudo service apache2 start
+```
+
+
+10. #### Install PostgreSQL
+```
+sudo apt-get install postgresql
+```
+
+#### Don´t allow remote connections to PostgreSQL
+https://www.digitalocean.com/community/tutorials/how-to-secure-postgresql-on-an-ubuntu-vps
+```
+sudo psql --version
+```
+#### The result of last command should be the input for the placeholder VERSION
+(x.x)
+```
+sudo nano /etc/postgresql/VERSION/main/pg_hba.conf
+```
+Result should be close to:
+##### Database administrative login by Unix domain socket
+local   all 	postgres 	p$
+
+##### TYPE  DATA BASE USER ADDRESS M$
+
+##### "local" is for Unix domain socket connections only
+local   all 	all 	p$
+##### IPv4 local connections:
+host    all 	all 	127.0.0.1/32 	m$
+##### IPv6 local connections:
+host    all 	all 	::1/128 	m$
+
+--------------
+#### Need to add the catalog user that will be created in the next step.
+
+#### "local" privileges for catalog
+host    all catalog 127.0.0.1/32      m$
+
+#### Add the above lines to pg_hba.conf after "local" is for Unix domain socket connections only BLOCK.
+--------------
+
+#### Reload postgresql
+```
+sudo service postgresql reload
+```
+
+#### To create catalog database, run the following to get into psql shell.
+```
+sudo -u postgres psql
+```
+
+#### Inside psql shell run:
+```
+create user catalog with password 'password123';
+create database catalog with owner catalog;
+```
+For exit:
+```
+\q
+```
+#### Since the catalog has limited access to the database we won't be running:
+#### Inside psql shell run:
+```
+grant all privileges on database <dbname> to <username>;
+```
+#### To enter as catalog user:
+```
+sudo -u postgres psql catalog
+```
+OR
+```
+psql postgresql://catalog:password123@loc
+alhost/catalog
+```
+If you enter that means the database is correctly created.
+
+#### Show all current tables in schema inside postgres
+```
+\dt
+```
+or
+```
+\d
+```
+
+11. #### Install git
+```
+sudo apt-get install git
+```
+
+12. #### To setup our server threw git.
+Our project is at https://github.com/HugoSmits/catalogUdacityProject
+
+To make sure that wsgi.py is not in the same folder as your project you can add a catalog dir before cloning
+```
+sudo mkdir catalog
+```
+```
+cd /var/www/catalog
+```
+#### Create the wsgi.py
+
+```
+sudo nano catalog.wsgi
+```
+#### Contents of catalog.wsgi file.
+```
+import sys
+
+sys.path.insert(0,'/var/www/catalog/')
+sys.path.insert(0,'/var/www/catalog/catalog/')
+
+from catalog import app as application
+
+application.secret_key = 'New secret key. Change it on server'
+
+application.config['SQLALCHEMY_DATABASE_URI'] = (
+    'postgresql://'
+    'catalog:password123@localhost/catalog')
+```
+the import can not be removed to avoid ImportError because it result in Error: Does not contain WSGI application 'application'.
+
+##### To clone to the server to the catalog directory:
+```
+cd /var/www/catalog
+sudo git clone https://github.com/HugoSmits/catalogUdacityProject catalog
+```
+
+##### If your project file has a different name than __init__.py a name change is needed for the wsgi.py file.
+When using python 2 there must be a file named __init__.py
+
+```
+cd /var/www/catalog/catalog
+sudo mv YOURNAMEFILE.py __init.py
+```
+##### Furthermore if your project has anything different that this:
+```
+app.run()
+```
+Substitute it in the main function by the code above.
+To avoid this [error](https://stackoverflow.com/questions/17780291/python-socket-error-errno-98-address-already-in-use).
+
+##### Then you can proceeed with the rest of the installation.
+```
+sudo apt-get install libapache2-mod-wsgi
+sudo apt-get install libapache2-mod-wsgi python-dev
+sudo a2enmod wsgi # enable wsgi
+```
+##### If needed to reread wsgi file. You can disable it and enable it.
+```
+sudo a2enmod wsgi # enable wsgi
+sudo a2dismod wsgi # disable wsgi
+```
+
+#### For python 2.x.x
+```
+# install pip
+sudo easy_install pip
+# install requirements
+cd catalog
+sudo pip install -r requirements.txt
+sudo python database_setup_migrate.py db init
+sudo python database_setup_migrate.py db migrate
+sudo python database_setup_migrate.py db upgrade
+sudo python lotsofmenus1.py # to populate.
+```
+OR
+```
+# install pip
+sudo easy_install pip
+# install requirements
+cd catalog
+sudo pip install -r requirements.txt
+# setup database
+export DB_URI=postgresql://catalog:password123@localhost/catalog
+python manage.py db upgrade
+# create initial categories
+python lotsofmenus1.py
+```
+OR
+```
+# install pip
+sudo easy_install pip
+# install requirements
+cd catalog
+sudo pip install -r requirements.txt
+sudo python database_setup.py
+sudo python lotsofmenus1.py
+```
+
+##### For python 3.x.x
+```
+# install pip3
+sudo easy_install pip3
+# install requirements
+cd catalog
+sudo pip3 install -r requirements.txt
+sudo python database_setup_migrate.py db init
+sudo python database_setup_migrate.py db upgrade
+```
+
+13. #### Now we need to run the project using Apache and mod-wsgi. So we will first create a configuration file for your project.
+
+```
+sudo nano /etc/apache2/sites-available/catalog.conf
+```
+
+```
+<VirtualHost *:80>
+    ServerName 35.180.121.218
+
+    WSGIDaemonProcess fronty user=www-data group=www-data threads=5 python-home=/var/www/html/fronty/venv
+
+    WSGIScriptAlias / /var/www/catalog/catalog.wsgi
+    <Directory /var/www/catalog/catalog/>
+        Order allow,deny
+        Allow from all
+    </Directory>
+    Alias /static /var/www/catalog/catalog/static
+    <Directory /var/www/catalog/catalog/static/>
+        Order allow,deny
+        Allow from all
+    </Directory>
+</VirtualHost>
+```
+#### For automatic reloading of wsgi add:
+WSGIScriptReloading On
+(Hasnt worked yet...)
+
+#### Enable the site.
+```
+sudo a2ensite catalog
+```
+#### Restart Apache
+```
+sudo service apache2 restart
+```
+#### If service needs to restart
+```
+sudo a2dissite catalog
+sudo service apache2 reload
+sudo a2ensite catalog
+sudo service apache2 reload
+sudo service apache2 restart
+```
+
+----------------
+
+### If errors occur such as this one:
+
+#### For error log enter:
+Clear log before visiting:
+```
+sudo bash -c 'echo > /var/log/apache2/error.log'
+```
+```
+sudo cat /var/log/apache2/error.log
+```
+
+Check Apache Configuration SyntaxPermalink
+Apache includes a nice little syntax checking tool. Use it to make sure you aren’t missing any brackets in your configuration files (and similar problems).
+
+Debian and Ubuntu:
+```
+apache2ctl -t
+```
+
+
+#### IF:Failed to start LSB: Apache2 web server
+```
+sudo service apache2 status
+```
+```
+apachectl stop
+```
+
+#### IF:Invalid command wsgiscriptalias perhaps misspelled or defined by a module not included in the server configuration.
+
+Try to enable wsgi mod in Apache
+```
+sudo a2enmod wsgi
+```
+##### If you come across below error
+
+ERROR: Module mod-wsgi does not exist!
+
+You will have to install mod wsgi as below. What you have to do is run the following commands,
+```
+sudo apt-get install libapache2-mod-wsgi
+sudo a2enmod wsgi
+sudo service apache2 restart
+```
+#### IF: AH00094: Command line: '/usr/sbin/apache2' , AH00491: caught SIGTERM, shutting down
+
+#### IF: how-do-i-run-systemctl-restart-apache2-in-aws-ubuntu-when-it-requires-a-password
+```
+sudo systemctl restart apache2
+or
+sudo service apache2 restart
+```
+```
+AH00491: caught SIGTERM, shutting down
+[Sat Feb 02 17:57:12.939813 2019] [wsgi:warn] [pid 11845:tid 140578556196736] mod_wsgi: Compiled for Python/2.7.11.
+[Sat Feb 02 17:57:12.939845 2019] [wsgi:warn] [pid 11845:tid 140578556196736] mod_wsgi: Runtime using Python/2.7.12.
+```
+
+```
+[wsgi:crit] [pid 19599:tid 139701741475712] mod_wsgi (pid=19599): The mod_python module can not be use
+d on conjunction with mod_wsgi 4.0+. Remove the mod_python module from the Apache configuration.
+AH00016: Configuration Failed
+```
+When i installed:
+```
+sudo apt-get remove libapache2-mod-python
+
+sudo apt-get install libapache2-mod-python
+```
+
+I had many pid of apache2 running. Killing the excess and starting apache2 helped. Geting a cleaner status report.
+https://askubuntu.com/questions/431925/how-to-restart-apache2-when-i-get-a-pid-conflict
+
+```
+tail -f /var/log/apache2/error.log
+```
+
+03/02/2019 error log:
+```
+[Sun Feb 03 19:54:29.854758 2019] [mpm_event:notice] [pid 20089:tid 140356647139200] AH00491: caught SIGTERM, shutting down
+[Sun Feb 03 19:54:30.872581 2019] [wsgi:warn] [pid 20239:tid 140448061446016] mod_wsgi: Compiled for Python/2.7.11.
+[Sun Feb 03 19:54:30.872613 2019] [wsgi:warn] [pid 20239:tid 140448061446016] mod_wsgi: Runtime using Python/2.7.12.
+[Sun Feb 03 19:54:30.873069 2019] [mpm_event:notice] [pid 20239:tid 140448061446016] AH00489: Apache/2.4.18 (Ubuntu) mod_wsgi/4.3.0 Python/2.7.12 configured -- resuming normal operations
+[Sun Feb 03 19:54:30.873083 2019] [core:notice] [pid 20239:tid 140448061446016] AH00094: Command line: '/usr/sbin/apache2'
+```
+```
+ubuntu@ip-172-26-1-50:~$ tail -f /var/log/apache2/error.log
+[Tue Feb 05 19:41:29.958048 2019] [wsgi:error] [pid 1399:tid 13983
+2433035008] [client 85.240.132.113:51315]     conn = _connect(dsn,
+ connection_factory=connection_factory, **kwasync), referer: http:
+//35.180.121.218/
+
+[Tue Feb 05 19:41:29.958080 2019] [wsgi:error] [pid 1399:tid 13983
+2433035008] [client 85.240.132.113:51315] OperationalError: (psyco
+pg2.OperationalError) could not connect to server: Connection refu
+sed, referer: http://35.180.121.218/
+
+[Tue Feb 05 19:41:29.958085 2019] [wsgi:error] [pid 1399:tid 13983
+2433035008] [client 85.240.132.113:51315] \tIs the server running
+on host "localhost" (127.0.0.1) and accepting, referer: http://35.
+180.121.218/
+[Tue Feb 05 19:41:29.958088 2019] [wsgi:error] [pid 1399:tid 13983
+2433035008] [client 85.240.132.113:51315] \tTCP/IP connections on 
+port 5432?, referer: http://35.180.121.218/
+[Tue Feb 05 19:41:29.958091 2019] [wsgi:error] [pid 1399:tid 13983
+2433035008] [client 85.240.132.113:51315] , referer: http://35.180
+.121.218/
+[Tue Feb 05 20:19:48.213032 2019] [mpm_event:notice] [pid 1395:tid
+ 139832644507520] AH00493: SIGUSR1 received.  Doing graceful resta
+rt
+```
+
+----------------
+##### THE PROBLEM LIES NOW IN WSGI SINCE I IMPORT A MODULE ON LINE 6 THAT DOESNT EXIST
+##### HOW TO SOLVE. WSGI.PY MUST NOT BE IN THE SAME DIR.
+##### SO YOU MAKE 2 DIR OF CATALOG ... SO VAR/WWW/CATALOG/CATALOG IN THE FIRST ONE YOU PUT WSGI.PY AND MANAGE.PY
+AND IN THE SECOND ONE YOU PUT YOUR WHOLE PROJECT.
+
 
 ## Contribuition
 
@@ -197,4 +610,30 @@ sudo service ssh restart
 - ##### https://lightsail.aws.amazon.com/ls/docs/en/articles/lightsail-how-to-connect-to-your-instance-virtual-private-server
 - ##### https://aws.amazon.com/pt/premiumsupport/knowledge-center/new-user-accounts-linux-instance/
 - ##### https://docs.aws.amazon.com/pt_br/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html
+- ##### https://askubuntu.com/questions/138423/how-do-i-change-my-timezone-to-utc-gmt
+- ##### https://stackoverflow.com/questions/13733719/which-version-of-postgresql-am-i-running
+- ##### https://medium.com/coding-blocks/creating-user-database-and-adding-access-on-postgresql-8bfcd2f4a91e
+- ##### https://serverfault.com/questions/268922/got-error-while-creating-database-in-postgres
 
+- #### Apache Setup and Issues
+- ##### https://askubuntu.com/questions/837372/apache2-service-is-not-active-cannot-reload
+- ##### https://serverfault.com/questions/607873/apache-is-ok-but-what-is-this-in-error-log-mpm-preforknotice
+- ##### https://stackoverflow.com/questions/20627327/invalid-command-wsgiscriptalias-perhaps-misspelled-or-defined-by-a-module-not
+- ##### http://manpages.ubuntu.com/manpages/xenial/man8/a2enmod.8.html
+- ##### https://askubuntu.com/questions/706128/ubuntu-clear-apache2-error-log
+- #### Flask migration
+- ##### https://flask-migrate.readthedocs.io/en/latest/
+- ##### https://www.youtube.com/watch?v=BAOfjPuVby0
+- ##### https://realpython.com/flask-by-example-part-2-postgres-sqlalchemy-and-alembic/
+- ##### https://www.digitalocean.com/community/tutorials/how-to-deploy-a-flask-application-on-an-ubuntu-vps
+- ##### http://flask.pocoo.org/docs/1.0/deploying/mod_wsgi/
+- ##### Github
+- ##### https://stackoverflow.com/questions/2047465/how-can-i-delete-a-file-from-git-repo
+- ##### Linux
+- ##### https://www.computerhope.com/issues/ch000798.htm
+- ##### Postgresql
+- ##### https://stackoverflow.com/questions/769683/show-tables-in-postgresql
+- ##### https://knowledge.udacity.com/questions/26808
+- ##### Apache Debugging
+- ##### https://serverfault.com/questions/607873/apache-is-ok-but-what-is-this-in-error-log-mpm-preforknotice
+- ##### https://askubuntu.com/questions/431925/how-to-restart-apache2-when-i-get-a-pid-conflict
