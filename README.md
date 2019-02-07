@@ -144,7 +144,7 @@ sudo ufw status
 	```
 	Location for file should be:
 	/home/YOUR_NAME/.ssh/PLACE_HOLDER
-	Pass:catalog (for example (later it will be turned off))
+	Pass:catalog (for example)
 
 	```
 	cd
@@ -265,7 +265,7 @@ host    all 	all 	::1/128 	m$
 #### Need to add the catalog user that will be created in the next step.
 
 #### "local" privileges for catalog
-host    all catalog 127.0.0.1/32      m$
+local    all   catalog                p$
 
 #### Add the above lines to pg_hba.conf after "local" is for Unix domain socket connections only BLOCK.
 --------------
@@ -336,18 +336,19 @@ sudo nano catalog.wsgi
 ```
 #### Contents of catalog.wsgi file.
 ```
+#! /usr/bin/python
+
 import sys
+import logging
+logging.basicConfig(stream=sys.stderr)
 
 sys.path.insert(0,'/var/www/catalog/')
-sys.path.insert(0,'/var/www/catalog/catalog/')
+sys.path.insert(0,'/var/www/catalog/__init__.py')
 
 from catalog import app as application
 
-application.secret_key = 'New secret key. Change it on server'
+application.secret_key = 'SuperSecretKey'
 
-application.config['SQLALCHEMY_DATABASE_URI'] = (
-    'postgresql://'
-    'catalog:password123@localhost/catalog')
 ```
 the import can not be removed to avoid ImportError because it result in Error: Does not contain WSGI application 'application'.
 
@@ -390,31 +391,6 @@ sudo easy_install pip
 # install requirements
 cd catalog
 sudo pip install -r requirements.txt
-sudo python database_setup_migrate.py db init
-sudo python database_setup_migrate.py db migrate
-sudo python database_setup_migrate.py db upgrade
-sudo python lotsofmenus1.py # to populate.
-```
-OR
-```
-# install pip
-sudo easy_install pip
-# install requirements
-cd catalog
-sudo pip install -r requirements.txt
-# setup database
-export DB_URI=postgresql://catalog:password123@localhost/catalog
-python manage.py db upgrade
-# create initial categories
-python lotsofmenus1.py
-```
-OR
-```
-# install pip
-sudo easy_install pip
-# install requirements
-cd catalog
-sudo pip install -r requirements.txt
 sudo python database_setup.py
 sudo python lotsofmenus1.py
 ```
@@ -438,25 +414,41 @@ sudo nano /etc/apache2/sites-available/catalog.conf
 
 ```
 <VirtualHost *:80>
-    ServerName 35.180.121.218
+	DocumentRoot "/var/www/catalog/"
+	ServerName 35.180.121.218
+	ServerAdmin ubuntu@35.180.121.218
+	ServerAlias flaskcatalog.com
+	WSGIScriptReloading On
+	WSGIDaemonProcess catalog python-path=/var/www/catalog:/var/www/catalog/venv/lib/python2.7/site-packages
+	WSGIProcessGroup catalog
 
-    WSGIDaemonProcess fronty user=www-data group=www-data threads=5 python-home=/var/www/html/fronty/venv
+	WSGIScriptAlias / /var/www/catalog/catalog.wsgi
+	<Directory /var/www/catalog/catalog/>
+		Order allow,deny
+		Allow from all
+	</Directory>
 
-    WSGIScriptAlias / /var/www/catalog/catalog.wsgi
-    <Directory /var/www/catalog/catalog/>
-        Order allow,deny
-        Allow from all
-    </Directory>
-    Alias /static /var/www/catalog/catalog/static
-    <Directory /var/www/catalog/catalog/static/>
-        Order allow,deny
-        Allow from all
-    </Directory>
+	Alias /static /var/www/catalog/catalog/static
+
+	<Directory /var/www/catalog/catalog/static/>
+		Order allow,deny
+		Allow from all
+	</Directory>
+
+	ErrorLog ${APACHE_LOG_DIR}/error.log
+	LogLevel warn
+	CustomLog ${APACHE_LOG_DIR}/access.log combined
 </VirtualHost>
 ```
 #### For automatic reloading of wsgi add:
 WSGIScriptReloading On
 (Hasnt worked yet...)
+
+#### Disable default site.
+```
+sudo a2dissite 000-default.conf
+sudo a2dissite 000-default
+```
 
 #### Enable the site.
 ```
@@ -466,6 +458,12 @@ sudo a2ensite catalog
 ```
 sudo service apache2 restart
 ```
+
+#### The site can be reached at:
+The server should be live now. Visit(htttp://35.180.121.218) !
+
+-----------------------------
+
 #### If service needs to restart
 ```
 sudo a2dissite catalog
@@ -474,8 +472,21 @@ sudo a2ensite catalog
 sudo service apache2 reload
 sudo service apache2 restart
 ```
+#### If service pstgresql needs to restart
+```
+sudo service postgresql restart
+sudo service postgresql status # Check status
+```
+#### Virtual Environment:
+```
+sudo virtualenv catalogenv
+source catalogenv/bin/activate
+```
+```
+deactivate #if succesful
+```
 
-----------------
+----------------------
 
 ### If errors occur such as this one:
 
@@ -483,6 +494,9 @@ sudo service apache2 restart
 Clear log before visiting:
 ```
 sudo bash -c 'echo > /var/log/apache2/error.log'
+```
+```
+sudo service apache2 restart
 ```
 ```
 sudo cat /var/log/apache2/error.log
@@ -554,47 +568,12 @@ https://askubuntu.com/questions/431925/how-to-restart-apache2-when-i-get-a-pid-c
 tail -f /var/log/apache2/error.log
 ```
 
-03/02/2019 error log:
-```
-[Sun Feb 03 19:54:29.854758 2019] [mpm_event:notice] [pid 20089:tid 140356647139200] AH00491: caught SIGTERM, shutting down
-[Sun Feb 03 19:54:30.872581 2019] [wsgi:warn] [pid 20239:tid 140448061446016] mod_wsgi: Compiled for Python/2.7.11.
-[Sun Feb 03 19:54:30.872613 2019] [wsgi:warn] [pid 20239:tid 140448061446016] mod_wsgi: Runtime using Python/2.7.12.
-[Sun Feb 03 19:54:30.873069 2019] [mpm_event:notice] [pid 20239:tid 140448061446016] AH00489: Apache/2.4.18 (Ubuntu) mod_wsgi/4.3.0 Python/2.7.12 configured -- resuming normal operations
-[Sun Feb 03 19:54:30.873083 2019] [core:notice] [pid 20239:tid 140448061446016] AH00094: Command line: '/usr/sbin/apache2'
-```
-```
-ubuntu@ip-172-26-1-50:~$ tail -f /var/log/apache2/error.log
-[Tue Feb 05 19:41:29.958048 2019] [wsgi:error] [pid 1399:tid 13983
-2433035008] [client 85.240.132.113:51315]     conn = _connect(dsn,
- connection_factory=connection_factory, **kwasync), referer: http:
-//35.180.121.218/
 
-[Tue Feb 05 19:41:29.958080 2019] [wsgi:error] [pid 1399:tid 13983
-2433035008] [client 85.240.132.113:51315] OperationalError: (psyco
-pg2.OperationalError) could not connect to server: Connection refu
-sed, referer: http://35.180.121.218/
-
-[Tue Feb 05 19:41:29.958085 2019] [wsgi:error] [pid 1399:tid 13983
-2433035008] [client 85.240.132.113:51315] \tIs the server running
-on host "localhost" (127.0.0.1) and accepting, referer: http://35.
-180.121.218/
-[Tue Feb 05 19:41:29.958088 2019] [wsgi:error] [pid 1399:tid 13983
-2433035008] [client 85.240.132.113:51315] \tTCP/IP connections on 
-port 5432?, referer: http://35.180.121.218/
-[Tue Feb 05 19:41:29.958091 2019] [wsgi:error] [pid 1399:tid 13983
-2433035008] [client 85.240.132.113:51315] , referer: http://35.180
-.121.218/
-[Tue Feb 05 20:19:48.213032 2019] [mpm_event:notice] [pid 1395:tid
- 139832644507520] AH00493: SIGUSR1 received.  Doing graceful resta
-rt
-```
+##### CHANGED THE VIRTUAL HOST TO WHAT IN THIS PAGE IS:
+https://modwsgi.readthedocs.io/en/develop/user-guides/configuration-guidelines.html
 
 ----------------
 ##### THE PROBLEM LIES NOW IN WSGI SINCE I IMPORT A MODULE ON LINE 6 THAT DOESNT EXIST
-##### HOW TO SOLVE. WSGI.PY MUST NOT BE IN THE SAME DIR.
-##### SO YOU MAKE 2 DIR OF CATALOG ... SO VAR/WWW/CATALOG/CATALOG IN THE FIRST ONE YOU PUT WSGI.PY AND MANAGE.PY
-AND IN THE SECOND ONE YOU PUT YOUR WHOLE PROJECT.
-
 
 ## Contribuition
 
@@ -627,13 +606,16 @@ AND IN THE SECOND ONE YOU PUT YOUR WHOLE PROJECT.
 - ##### https://realpython.com/flask-by-example-part-2-postgres-sqlalchemy-and-alembic/
 - ##### https://www.digitalocean.com/community/tutorials/how-to-deploy-a-flask-application-on-an-ubuntu-vps
 - ##### http://flask.pocoo.org/docs/1.0/deploying/mod_wsgi/
-- ##### Github
+- #### Github
 - ##### https://stackoverflow.com/questions/2047465/how-can-i-delete-a-file-from-git-repo
-- ##### Linux
+- #### Linux
 - ##### https://www.computerhope.com/issues/ch000798.htm
-- ##### Postgresql
+- #### Postgresql
 - ##### https://stackoverflow.com/questions/769683/show-tables-in-postgresql
 - ##### https://knowledge.udacity.com/questions/26808
-- ##### Apache Debugging
+- #### Apache Debugging
 - ##### https://serverfault.com/questions/607873/apache-is-ok-but-what-is-this-in-error-log-mpm-preforknotice
 - ##### https://askubuntu.com/questions/431925/how-to-restart-apache2-when-i-get-a-pid-conflict
+- ##### https://www.linode.com/docs/troubleshooting/troubleshooting-common-apache-issues/
+- ##### https://www.digitalocean.com/community/tutorials/how-to-configure-logging-and-log-rotation-in-apache-on-an-ubuntu-vps
+- ##### https://stackoverflow.com/questions/39929258/connection-refused-with-postgresql-using-psycopg2
