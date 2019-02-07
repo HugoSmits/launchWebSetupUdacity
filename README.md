@@ -50,47 +50,47 @@ sudo apt-get autremove
 sudo ufw status
 ```
 
-## Deny all incoming threw firewall
+#### Deny all incoming threw firewall
 ```
 sudo ufw default deny incoming
 ```
 
-## Allow all outgoing threw firewall
+#### Allow all outgoing threw firewall
 ```
 sudo ufw default allow outgoing
 ```
 
-## Allow ssh
+#### Allow ssh
 ```
 sudo ufw allow ssh
 ```
 
-## Allow ssh on port 2200 with tcp
+#### Allow ssh on port 2200 with tcp
 ```
 sudo ufw allow 2200/tcp
 ```
 
-## Allow for basic http server
+#### Allow for basic http server
 ```
 sudo ufw allow www
 ```
 
-## Allow NTP
+#### Allow NTP
 ```
 sudo ufw allow ntp
 ```
 
-## Allow ntp on port 123
+#### Allow ntp on port 123
 ```
 sudo ufw allow 123/udp
 ```
 
-## Enable Firewall
+#### Enable Firewall
 ```
 sudo ufw enable
 ```
 
-## See the status of the firewall
+#### See the status of the firewall
 ```
 sudo ufw status
 ```
@@ -267,7 +267,7 @@ host    all 	all 	::1/128 	m$
 #### "local" privileges for catalog
 local    all   catalog                p$
 
-#### Add the above lines to pg_hba.conf after "local" is for Unix domain socket connections only BLOCK.
+#### Add the above lines to pg_hba.conf after "TYPE  DATA BASE USER ADDRESS"
 --------------
 
 #### Reload postgresql
