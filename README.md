@@ -205,13 +205,16 @@ sudo service ssh restart
 ```
 ssh grader@YOUR_PUBLIC_IP -p 22 -i ~/.ssh/PLACE_HOLDER
 ```
-8. #### Switch to UTC
+## Switch to UTC
 To switch to UTC, simply execute:
 ```
 sudo dpkg-reconfigure tzdata
 ```
-Scroll to the bottom of the Continents list and select Etc or None of the above; in the second list, select UTC. If you prefer GMT instead of UTC, it's just above UTC in that list. :)
-9. #### Python using Apache and mod_wsgi install:
+Scroll to the bottom of the Continents list and select Etc or None of the above; in the second list, select UTC. If you prefer GMT instead of UTC, it's just above UTC in that list.
+
+## Setting up your web server environment
+
+1. #### Python using Apache and mod_wsgi install:
 
 ##### Python 2.x.x
 ```
@@ -233,7 +236,7 @@ sudo service apache2 start
 ```
 
 
-10. #### Install PostgreSQL
+2. #### Install PostgreSQL
 ```
 sudo apt-get install postgresql
 ```
@@ -314,12 +317,12 @@ or
 \d
 ```
 
-11. #### Install git
+3. #### Install git
 ```
 sudo apt-get install git
 ```
 
-12. #### To setup our server threw git.
+4. #### To setup our server threw git.
 Our project is at https://github.com/HugoSmits/catalogUdacityProject
 
 To make sure that wsgi.py is not in the same folder as your project you can add a catalog dir before cloning
@@ -329,7 +332,8 @@ sudo mkdir catalog
 ```
 cd /var/www/catalog
 ```
-#### Create the wsgi.py
+
+## Create the wsgi.py
 
 ```
 sudo nano catalog.wsgi
@@ -350,7 +354,7 @@ from catalog import app as application
 application.secret_key = 'SuperSecretKey'
 
 ```
-the import can not be removed to avoid ImportError because it result in Error: Does not contain WSGI application 'application'.
+The import can not be removed to avoid ImportError because it result in Error: Does not contain WSGI application 'application'.
 
 ##### To clone to the server to the catalog directory:
 ```
@@ -405,8 +409,9 @@ sudo pip3 install -r requirements.txt
 sudo python database_setup_migrate.py db init
 sudo python database_setup_migrate.py db upgrade
 ```
+## Setting up your VirtualHost
 
-13. #### Now we need to run the project using Apache and mod-wsgi. So we will first create a configuration file for your project.
+1. #### Now we need to run the project using Apache and mod-wsgi. So we will first create a configuration file for your project.
 
 ```
 sudo nano /etc/apache2/sites-available/catalog.conf
@@ -458,6 +463,7 @@ sudo a2ensite catalog
 ```
 sudo service apache2 restart
 ```
+## Visit your site
 
 #### The site can be reached at:
 The server should be live now. Visit(htttp://35.180.121.218) !
