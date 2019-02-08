@@ -60,11 +60,6 @@ sudo ufw default deny incoming
 sudo ufw default allow outgoing
 ```
 
-#### Allow ssh
-```
-sudo ufw allow ssh
-```
-
 #### Allow ssh on port 2200 with tcp
 ```
 sudo ufw allow 2200/tcp
@@ -103,7 +98,12 @@ sudo ufw status
 	```
 	sudo adduser grader
 	```
-	#### Pass: grader
+	#### Grader password is:
+	grader
+	#### To add the new user to the sudo group:
+	```
+	sudo addgroup grader 'sudo'
+	```
 2. #### Changing to grader terminal.
 	```
 	sudo su grader
@@ -182,10 +182,16 @@ sudo ufw status
 	```
 	sudo nano /etc/ssh/sshd_config
 	```
-	Locate "Port 22" in that file. Change it to "Port 2200" (At the moment i append it).
+	Locate "Port 22" in that file. Change it to "Port 2200".
+	Aswell set:
+	```
+	PermitRootLogin no
+	```
+	```
+	sudo systemctl restart sshd
 	```
 	Restart ssh service.
-	```
+
 	For effect to take place the ssh service needs to restart
 	```
 	sudo service ssh restart
@@ -203,7 +209,7 @@ sudo service ssh restart
 ```
 7. #### to login from local machine use:
 ```
-ssh grader@YOUR_PUBLIC_IP -p 22 -i ~/.ssh/PLACE_HOLDER
+ssh grader@YOUR_PUBLIC_IP -p 2200 -i ~/.ssh/PLACE_HOLDER
 ```
 ## Switch to UTC
 To switch to UTC, simply execute:
@@ -220,6 +226,7 @@ Scroll to the bottom of the Continents list and select Etc or None of the above;
 ```
 sudo apt-get install python
 sudo apt-get install python-setuptools
+sudo apt-get install python-sqlalchemy
 sudo apt-get install apache2 libapache2-mod-wsgi
 ```
 
@@ -227,6 +234,7 @@ sudo apt-get install apache2 libapache2-mod-wsgi
 ```
 sudo apt-get install python3
 sudo apt-get install python3-setuptools
+sudo apt-get install python3-sqlalchemy
 sudo apt-get install apache2 libapache2-mod-wsgi-py3
 ```
 
@@ -253,22 +261,22 @@ sudo nano /etc/postgresql/VERSION/main/pg_hba.conf
 ```
 Result should be close to:
 ##### Database administrative login by Unix domain socket
-local   all 	postgres 	p$
+local   all 	postgres 	peer
 
-##### TYPE  DATA BASE USER ADDRESS M$
+##### TYPE  DATA BASE USER ADDRESS METHOD
 
 ##### "local" is for Unix domain socket connections only
-local   all 	all 	p$
+local   all 	all 	peer
 ##### IPv4 local connections:
-host    all 	all 	127.0.0.1/32 	m$
+host    all 	all 	127.0.0.1/32 	md5
 ##### IPv6 local connections:
-host    all 	all 	::1/128 	m$
+host    all 	all 	::1/128 	md5
 
 --------------
 #### Need to add the catalog user that will be created in the next step.
 
 #### "local" privileges for catalog
-local    all   catalog                p$
+local    all   catalog                peer
 
 #### Add the above lines to pg_hba.conf after "TYPE  DATA BASE USER ADDRESS"
 --------------
@@ -347,7 +355,9 @@ import logging
 logging.basicConfig(stream=sys.stderr)
 
 sys.path.insert(0,'/var/www/catalog/')
-sys.path.insert(0,'/var/www/catalog/__init__.py')
+sys.path.insert(0,'/var/www/catalog/catalog/__init__.py')
+sys.path.insert(0,'/var/www/catalog/catalog/g_client_secrets.json')
+sys.path.insert(0,'/var/www/catalog/catalog/fb_client_secrets.json')
 
 from catalog import app as application
 
@@ -384,8 +394,8 @@ sudo a2enmod wsgi # enable wsgi
 ```
 ##### If needed to reread wsgi file. You can disable it and enable it.
 ```
-sudo a2enmod wsgi # enable wsgi
 sudo a2dismod wsgi # disable wsgi
+sudo a2enmod wsgi # enable wsgi
 ```
 
 #### For python 2.x.x
@@ -406,8 +416,8 @@ sudo easy_install pip3
 # install requirements
 cd catalog
 sudo pip3 install -r requirements.txt
-sudo python database_setup_migrate.py db init
-sudo python database_setup_migrate.py db upgrade
+sudo python3 database_setup.py
+sudo python3 lotsofmenus1.py
 ```
 ## Setting up your VirtualHost
 
@@ -619,6 +629,9 @@ https://modwsgi.readthedocs.io/en/develop/user-guides/configuration-guidelines.h
 - #### Postgresql
 - ##### https://stackoverflow.com/questions/769683/show-tables-in-postgresql
 - ##### https://knowledge.udacity.com/questions/26808
+- ##### Reinstalling Postgresql
+- ##### https://askubuntu.com/questions/50621/cannot-connect-to-postgresql-on-port-5432
+- ##### https://askubuntu.com/questions/32730/how-to-remove-postgres-from-my-installation
 - #### Apache Debugging
 - ##### https://serverfault.com/questions/607873/apache-is-ok-but-what-is-this-in-error-log-mpm-preforknotice
 - ##### https://askubuntu.com/questions/431925/how-to-restart-apache2-when-i-get-a-pid-conflict
